@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                 String          @id @default(cuid())   
+
+  upc                String?         @unique
+  ean                String?         @unique
+  customSku          String?         @unique
+  manufacturerSku    String?
+  name               String
+  brand              String?
+  season             String?
+  department         String?
+  msrp               Decimal?        // Consider using Decimal type for monetary values
+  taxClass           String?
+  defaultCost        Decimal?        // Consider using Decimal type for monetary values
+  vendor             Vendor          @relation(fields: [vendorId], references: [id])
+  vendorId           String
+  inventoryItems     InventoryItem[]
+  ecomSettings       EcomSettings?
+
+  // Corrected relationship for categories (many-to-many)
+  categories         Category[]
+}
+
+model InventoryItem {
+  id         String  @id @default(cuid())
+  product    Product @relation(fields: [productId], references: [id])
+  productId  String
+  store      Store   @relation(fields: [storeId], references: [id])
+  storeId    String   
+
+  quantity   Int
+  price      Decimal
+  tax        Decimal
+}
+
+model Store {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  inventoryItems InventoryItem[]
+}
+
+model Vendor {
+  id         String    @id @default(cuid())
+  name       String
+  category   String?
+  products   Product[]
+}
+
+// Corrected Category Model (again)
+model Category {
+  id             String   @id @default(cuid())
+  name           String
+  products       Product[]
+  subCategory    Category? @relation("subCategory", fields: [subCategoryId], references: [id])
+  subCategoryId  String?  @unique
+  parentCategory Category? @relation("subCategory") // No 'fields' here
+}
+
+model EcomSettings {
+  id           String  @id @default(cuid())
+  product      Product @relation(fields: [productId], references: [id])
+  productId    String  @unique
+  publishToEcom Boolean
+}
